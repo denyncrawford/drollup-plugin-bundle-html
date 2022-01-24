@@ -1,6 +1,6 @@
 const { statSync, readFileSync, writeFileSync, readdirSync, unlinkSync } = Deno;
 import { relative, basename, sep as pathSeperator } from 'https://deno.land/std/path/mod.ts';
-import { hasha, cheerio } from '../deps.ts';
+import { createHash, cheerio } from '../deps.ts';
 
 function traverse(dir, list) {
 	const dirList = readdirSync(dir);
@@ -76,16 +76,17 @@ export default (opt = {}) => {
 					if (sourcemap) {
 						let srcmapFile = file + ".map";
 						const srcmapCode = readFileSync(srcmapFile).toString();
-						const srcmapHash = hasha(srcmapCode, { algorithm: 'md5' });
+						const srcmapHash = createHash('md5').update(srcmapCode);
 
 						// remove the source map file without hash
 						unlinkSync(srcmapFile);
-						srcmapFile = srcmapFile.replace('[hash]', srcmapHash);
+						srcmapFile = srcmapFile.replace('[hash]', srcmapHash.toString());
 						writeFileSync(srcmapFile, srcmapCode);
 
 						code = code.replace(`//# sourceMappingURL=${basename(file)}.map`, `//# sourceMappingURL=${basename(srcmapFile)}`)
 					}
-					hash = hasha(code, { algorithm: 'md5' });
+					hash = createHash('md5').update(code);
+					hash = hash.toString();
 					// remove the file without hash
 					unlinkSync(file);
 					file = file.replace('[hash]', hash)
